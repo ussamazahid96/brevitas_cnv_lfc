@@ -4,4 +4,4 @@ __pycache__/
 models/__pycache__/
 pynq_wrapper/__pycache__/
 training_scripts/sds_trace_data.dat
-models/pynq_wrapper/layer_loader.so
+training_scripts/models/pynq_wrapper/layer_loader.so
