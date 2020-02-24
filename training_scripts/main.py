@@ -59,6 +59,7 @@ parser.add_argument("--log_freq", type=int, default=10)
 
 # Execution modes
 parser.add_argument("--evaluate", dest="evaluate", action="store_true", help="evaluate model on validation set")
+parser.add_argument("--export", dest="export", action="store_true", help="export model")
 parser.add_argument("--resume", dest="resume", type=none_or_str, help="Resume from checkpoint")
 add_bool_arg(parser, "strict", default=True)
 add_bool_arg(parser, "detect_nan", default=False)
@@ -66,6 +67,7 @@ add_bool_arg(parser, "detect_nan", default=False)
 # Compute resources
 parser.add_argument("--num_workers", default=4, type=int, help="Number of workers")
 parser.add_argument("--gpus", type=none_or_str, default="0", help="Comma separated GPUs")
+parser.add_argument("--fpga", dest="fpga", action="store_true", help="perform inference on fpga device")
 
 # Optimizer hyperparams
 parser.add_argument("--batch_size", default=100, type=int, help="batch size")
@@ -117,12 +119,16 @@ if __name__ == "__main__":
             abs_path = os.path.abspath(os.path.join(os.path.dirname(__file__), path))
             setattr(args, path_arg, abs_path)
 
-    # Access config as an object
-    config = objdict(args.__dict__)
+    # no gpus for export and fpga inference
+    if args.export or args.fpga:
+        args.gpus = None
 
     # Avoid creating new folders etc.
-    if args.evaluate:
+    if args.evaluate or args.export:
         args.dry_run = True
+
+    # Access config as an object
+    config = objdict(args.__dict__)
 
     # Init trainer
     trainer = Trainer(config)
@@ -131,5 +137,7 @@ if __name__ == "__main__":
     if args.evaluate:
         with torch.no_grad():
             trainer.eval_model()
+    elif args.export:
+        trainer.export_model()
     else:
         trainer.train_model()

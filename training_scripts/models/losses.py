@@ -23,7 +23,6 @@ class squaredhingeloss(Function):
        return grad_output, None    
 
 class SqrHingeLoss(nn.Module):
-    # Squared Hinge Loss
     def __init__(self):
         super(SqrHingeLoss, self).__init__()
     

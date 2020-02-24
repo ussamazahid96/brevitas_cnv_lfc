@@ -1,118 +1,66 @@
-# BNN-PYNQ Brevitas experiments
+# brevitas-to-BNN-PYNQ
 
-This repo contains training scripts and pretrained models to recreate the LFC and CNV models
-used in the [BNN-PYNQ](https://github.com/Xilinx/BNN-PYNQ) repo using [Brevitas](https://github.com/Xilinx/brevitas).
-These pretrained models and training scripts are courtesy of 
-[Alessandro Pappalardo](https://github.com/volcacius) and [Ussama Zahid](https://github.com/ussamazahid96).
+This fork demonstrates how brevitas models can be exported and executed directly on pynq board (ARM as well as fpga). It contains python scripts for hardware inference, training scripts as well as pretrained models for the LFC and CNV
+used in the [BNN-PYNQ](https://github.com/Xilinx/BNN-PYNQ).
 
 ## Requirements
+- Cython >= 0.29
+- Numpy >= 1.18
 - Pytorch >= 1.1.0
+- TorchVision >= 0.4
 - Brevitas (https://github.com/Xilinx/brevitas)
 
-# Install
-- Get a Pytorch >= 1.1.0 installation, e.g:
+# Setup for pynq board
+- Install the pytorch and torchvision .whl on pynqZ1/Ultra96. Compilation instructions along with the prebuilt .whls for aarch64 are available from [here](https://github.com/quetric/pynqwheels4pytorch). When compiling for arm7, set an additional flag, and the qemu to use arm7. Follow rest of the given compilation instructions as it is.
  ```bash
-docker pull pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-devel
+export NO_DISTRIBUTED=1
+echo ':qemu-arm:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-arm-static:' > /proc/sys/fs/binfmt_misc/register
+ ```
+- Copy the .whl files on the pynq board and install:
+
+ ```bash
+sudo pip3 install *.whl
  ```
 
-- Within your Pytorch environment, install Brevitas preview:
+- Install Brevitas and pre-requisites:
  ```bash
- git clone https://github.com/Xilinx/brevitas
+ sudo pip3 install packaging Cython==0.29 numpy==1.18
+ git clone https://github.com/Xilinx/brevitas.git
  cd brevitas
- pip install .
+ sudo pip3 install .
  ```
 
-- Within your Pytorch environment, with Brevitas install, clone the training repo:
+- On the pynq board, with Brevitas installed, clone the this repo and build an .so file for fast parameter loading:
  ```bash
- git clone https://github.com/maltanar/brevitas_cnv_lfc
+ git clone https://github.com/ussamazahid96/brevitas_cnv_lfc.git
+ cd brevitas_cnv_lfc/training_scripts/models/pynq_wrapper/
+ ./gen_layer_loader.sh
  ```
 
-## Experiments
+## Evaluate on fpga
 
-| Name     | Input quantization           | Weight quantization | Activation quantization | Brevitas Top1 | Theano Top1 |
-|----------|------------------------------|---------------------|-------------------------|---------------|---------------|
-| LFC_1W1A | 1 bit                        | 1 bit               | 1 bit                   | 98.88%        | 98.35%        |
-| LFC_1W2A | 2 bit                        | 1 bit               | 2 bit                   | 98.99%        | 98.55%        |
-| CNV_1W1A | None (original [-1,1] 8 bit) | 1 bit               | 1 bit                   | 84.22%        | 79.54%        |
-| CNV_1W2A | None (original [-1,1] 8 bit) | 1 bit               | 2 bit                   | 87.80%        | 83.63%        |
-| CNV_2W2A | None (original [-1,1] 8 bit) | 2 bit               | 2 bit                   | 89.03%        | 84.80%        |
-
-## Train
-
-A few notes on training:
-- An experiments folder at */path/to/experiments* must exist before launching the training.
-- Training is set to 1000 epochs for 1W1A networks, 500 otherwise. 
-- Force-enabling the Pytorch JIT with the env flag PYTORCH_JIT=1 significantly speeds up training.
-
-### LFC_1W1A
-
-From within the *training_scripts* folder:
+The included bitstreams are taken as it is from [BNN-PYNQ](https://github.com/Xilinx/BNN-PYNQ). From within *training_scripts* folder:
  ```bash
-PYTORCH_JIT=1 python main.py --network LFC --dataset MNIST --weight_bit_width 1 --act_bit_width 1 --in_bit_width 1 --experiments /path/to/experiments
+sudo python3 main.py --network <LFC/CNV> --dataset <MNIST/CIFAR10> --weight_bit_width <1/2> --act_bit_width <1/2> --in_bit_width <1/8> --resume ../pretrained_models/<selected model>/checkpoints/best.tar --evaluate --fpga
  ```
 
-### LFC_1W2A
+## Evaluate (on CPU/ARM)
 
-From within the *training_scripts* folder:
+Similarly to run inference on PC or ARM processor of pynq board, run the same command with the additional `--gpus None` flag:
  ```bash
-PYTORCH_JIT=1 python main.py --network LFC --dataset MNIST --weight_bit_width 1 --act_bit_width 2 --in_bit_width 2 --experiments /path/to/experiments
+python3 main.py --network <LFC/CNV> --dataset <MNIST/CIFAR10> --weight_bit_width <1/2> --act_bit_width <1/2> --in_bit_width <1/8> --resume ../pretrained_models/<selected model>/checkpoints/best.tar --evaluate --gpus None
  ```
 
-### CNV_1W1A
+## Training on GPU
 
-From within the *training_scripts* folder:
+Install Pytorch, Torchvision and Brevitas on PC. An experiments folder at */path/to/experiments* must exist before launching the training:
  ```bash
-PYTORCH_JIT=1 python main.py --network CNV --dataset CIFAR10 --weight_bit_width 1 --act_bit_width 1 --in_bit_width 8 --experiments /path/to/experiments
+python3 main.py --network <LFC/CNV> --dataset <MNIST/CIFAR10> --weight_bit_width <1/2> --act_bit_width <1/2> --in_bit_width <1/8> --experiments /path/to/experiments
  ```
 
-### CNV_1W2A
+## Export .bin files to use in BNN-PYNQ
 
-From within the *training_scripts* folder:
- ```bash
-PYTORCH_JIT=1 python main.py --network CNV --dataset CIFAR10 --weight_bit_width 1 --act_bit_width 2 --in_bit_width 8 --experiments /path/to/experiments
- ```
-
-### CNV_2W2A
-
-From within the *training_scripts* folder:
- ```bash
-PYTORCH_JIT=1 python main.py --network CNV --dataset CIFAR10 --weight_bit_width 2 --act_bit_width 2 --in_bit_width 8 --experiments /path/to/experiments
- ```
-
-## Evaluate
-Evaluating requires to re-specify the network configuration on the command line, as it is not loaded from the checkpoint.
-
-### LFC_1W1A
-
-From within the *training_scripts* folder:
- ```bash
-PYTORCH_JIT=1 python main.py --network LFC --dataset MNIST --weight_bit_width 1 --act_bit_width 1 --in_bit_width 1 --resume /path/to/LFC_1W1A/checkpoints/best.tar --evaluate --dry_run
- ```
-
-### LFC_1W2A
-
-From within the *training_scripts* folder:
- ```bash
-PYTORCH_JIT=1 python main.py --network LFC --dataset MNIST --weight_bit_width 1 --act_bit_width 2 --in_bit_width 2 --resume /path/to/LFC_1W2A/checkpoints/best.tar --evaluate --dry_run
- ```
-
-### CNV_1W1A
-
-From within the *training_scripts* folder:
- ```bash
-PYTORCH_JIT=1 python main.py --network CNV --dataset CIFAR10 --weight_bit_width 1 --act_bit_width 1 --in_bit_width 8 --resume /path/to/CNV_1W1A/checkpoints/best.tar --evaluate --dry_run
- ```
-
-### CNV_1W2A
-
-From within the *training_scripts* folder:
- ```bash
-PYTORCH_JIT=1 python main.py --network CNV --dataset CIFAR10 --weight_bit_width 1 --act_bit_width 2 --in_bit_width 8 --resume /path/to/CNV_1W2A/checkpoints/best.tar --evaluate --dry_run
- ```
-
-### CNV_2W2A
-
-From within the *training_scripts* folder:
- ```bash
-PYTORCH_JIT=1 python main.py --network CNV --dataset CIFAR10 --weight_bit_width 2 --act_bit_width 2 --in_bit_width 8 --resume /path/to/CNV_2W2A/checkpoints/best.tar --evaluate --dry_run
+.bin files to use in BNN-PYNQ for bitstream generation can be exported as:
+```bash
+sudo python3 main.py --network <LFC/CNV> --dataset <MNIST/CIFAR10> --weight_bit_width <1/2> --act_bit_width <1/2> --in_bit_width <1/8> --resume ../pretrained_models/<selected model>/checkpoints/best.tar --export
  ```

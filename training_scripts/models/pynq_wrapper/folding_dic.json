@@ -1,0 +1,49 @@
+{
+	"lfcW1A1": {
+				"pe": [32, 64, 32, 16], 
+				"simd": [64, 32, 64, 8], 
+				"threshbits": [16, 16, 16, 16], 
+				"threshIntbits": [null, null, null, null], 
+				"w_prec_frac": [0, 0, 0, 0], 
+				"inp_prec_frac": [0, 0, 0, 0], 
+				"out_prec_frac": [0, 0, 0, 0]
+				}, 
+
+	"lfcW1A2": {
+				"pe": [32, 64, 32, 16], 
+				"simd": [64, 32, 64, 8], 
+				"threshbits": [16, 16, 16, 16], 
+				"threshIntbits": [null, null, null, null], 
+				"w_prec_frac": [0, 0, 0, 0], 
+				"inp_prec_frac": [0, 0, 0, 0], 
+				"out_prec_frac": [0, 0, 0, 0]
+				},
+
+	"cnvW1A1": {
+				"pe": [16, 32, 16, 16, 4, 1, 1, 1, 4], 
+				"simd": [3, 32, 32, 32, 32, 32, 4, 8, 1], 
+				"threshbits": [24, 16, 16, 16, 16, 16, 16, 16, 16], 
+				"threshIntbits": [16, null, null, null, null, null, null, null, null], 
+				"w_prec_frac": [0, 0, 0, 0, 0, 0, 0, 0, 0], 
+				"inp_prec_frac": [7, 0, 0, 0, 0, 0, 0, 0, 0], 
+				"out_prec_frac": [0, 0, 0, 0, 0, 0, 0, 0, 0]
+				},
+	"cnvW1A2": {
+				"pe": [16, 32, 16, 16,  4,  1, 1, 1, 4], 
+				"simd": [ 3, 32, 32, 32, 32, 32, 4, 8, 1], 
+				"threshbits": [24, 16, 16, 16, 16, 16, 16, 16, 16], 
+				"threshIntbits": [16, null, null, null, null, null, null, null, null], 
+				"w_prec_frac": [0, 0, 0, 0, 0, 0, 0, 0, 0], 
+				"inp_prec_frac": [7, 0, 0, 0, 0, 0, 0, 0, 0], 
+				"out_prec_frac": [0, 0, 0, 0, 0, 0, 0, 0, 0]
+				},
+	"cnvW2A2": {
+				"pe": [8, 16,  8,  8, 4, 1, 1, 2, 4], 
+				"simd": [3, 16, 16, 16, 8, 8, 2, 2, 1], 
+				"threshbits": [24, 16, 16, 16, 16, 16, 16, 16, 16], 
+				"threshIntbits": [16, null, null, null, null, null, null, null, null], 
+				"w_prec_frac": [0, 0, 0, 0, 0, 0, 0, 0, 0], 
+				"inp_prec_frac": [7, 0, 0, 0, 0, 0, 0, 0, 0], 
+				"out_prec_frac": [0, 0, 0, 0, 0, 0, 0, 0, 0]
+				}
+}

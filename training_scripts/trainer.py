@@ -20,18 +20,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import time
 import random
 import shutil
-import time
 from datetime import datetime
 
 import torch
-import torch.optim as optim
 from torch import nn
-from torch.optim.lr_scheduler import MultiStepLR
-from torch.utils.data import DataLoader
+import torch.optim as optim
 from torchvision import transforms
+from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST, CIFAR10
+from torch.optim.lr_scheduler import MultiStepLR
 
 from logger import *
 from models.CNV import CNV
@@ -69,12 +69,14 @@ class Trainer(object):
         if self.config.resume:
             self.output_dir_path, _ = os.path.split(config.resume)
             self.output_dir_path, _ = os.path.split(self.output_dir_path)
-
+        self.config['output_dir_path'] = self.output_dir_path + '/'
+        
         if not config.dry_run:
             self.checkpoints_dir_path = os.path.join(self.output_dir_path, 'checkpoints')
             if not config.resume:
                 os.mkdir(self.output_dir_path)
                 os.mkdir(self.checkpoints_dir_path)
+        
         self.logger = Logger(self.output_dir_path, config.dry_run)
 
         # Randomness
@@ -135,15 +137,11 @@ class Trainer(object):
 
         # Setup model
         if config.network == 'CNV':
-            model = CNV(weight_bit_width=config.weight_bit_width,
-                        act_bit_width=config.act_bit_width,
-                        in_bit_width=config.in_bit_width,
+            model = CNV(config=config,
                         num_classes=self.num_classes,
                         in_ch=in_channels)
         elif config.network == 'LFC':
-            model = LFC(weight_bit_width=config.weight_bit_width,
-                        act_bit_width=config.act_bit_width,
-                        in_bit_width=config.in_bit_width,
+            model = LFC(config=config,
                         num_classes=self.num_classes,
                         in_ch=in_channels)
         else:
@@ -229,8 +227,6 @@ class Trainer(object):
 
             # Init metrics
             epoch_meters = TrainingEpochMeters()
-            start_data_loading = time.time()
-
 
             for i, data in enumerate(self.train_loader):
                 (input, target) = data
@@ -248,23 +244,15 @@ class Trainer(object):
                 else:
                     target_var = target
 
-                # measure data loading time
-                epoch_meters.data_time.update(time.time() - start_data_loading)
-
-                # Training batch starts
-                start_batch = time.time()
                 output = self.model(input)
                 loss = self.criterion(output, target_var)
 
-                # compute gradient and do SGD step
+                # compute gradient and do the step
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
                 self.model.clip_weights(-1,1)
-
-                # measure elapsed time
-                epoch_meters.batch_time.update(time.time() - start_batch)
 
                 if i % int(self.config.log_freq) == 0 or i == len(self.train_loader) - 1:
                     prec1, prec5 = accuracy(output.detach(), target, topk=(1, 5))
@@ -273,14 +261,11 @@ class Trainer(object):
                     epoch_meters.top5.update(prec5.item(), input.size(0))
                     self.logger.training_batch_cli_log(epoch_meters, epoch, i, len(self.train_loader))
 
-                # training batch ends
-                start_data_loading = time.time()
 
             # Set the learning rate
             if self.scheduler is not None:
                 self.scheduler.step(epoch)
             else:
-                # Set the learning rate
                 if epoch%40==0:
                     self.optimizer.param_groups[0]['lr'] *= 0.5
 
@@ -308,14 +293,13 @@ class Trainer(object):
 
         for i, data in enumerate(self.test_loader):
 
-            end = time.time()
             (input, target) = data
 
             input = input.to(self.device, non_blocking=True)
             target = target.to(self.device, non_blocking=True)
             
             # for hingeloss only
-            if isinstance(self.criterion, SqrHingeLoss):        
+            if isinstance(self.criterion, SqrHingeLoss):
                 target=target.unsqueeze(1)
                 target_onehot = torch.Tensor(target.size(0), self.num_classes).to(self.device, non_blocking=True)
                 target_onehot.fill_(-1)
@@ -325,16 +309,15 @@ class Trainer(object):
             else:
                 target_var = target
             
+            start = time.time()
             # compute output
             output = self.model(input)
-
+            
             # measure model elapsed time
-            eval_meters.model_time.update(time.time() - end)
-            end = time.time()
+            eval_meters.model_time.update(time.time() - start)
 
-            #compute loss
+            # compute loss
             loss = self.criterion(output, target_var)
-            eval_meters.loss_time.update(time.time() - end)
 
             pred = output.data.argmax(1, keepdim=True)
             correct = pred.eq(target.data.view_as(pred)).sum()
@@ -345,7 +328,10 @@ class Trainer(object):
             eval_meters.top1.update(prec1.item(), input.size(0))
             eval_meters.top5.update(prec5.item(), input.size(0))
 
-            #Eval batch ends
+            # Eval batch ends
             self.logger.eval_batch_cli_log(eval_meters, i, len(self.test_loader))
 
         return eval_meters.top1.avg
+
+    def export_model(self):
+        self.model.export(self.output_dir_path)

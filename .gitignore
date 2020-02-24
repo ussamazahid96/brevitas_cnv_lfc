@@ -1,3 +1,7 @@
+sds_trace_data.dat
 data/
 __pycache__/
 models/__pycache__/
+pynq_wrapper/__pycache__/
+training_scripts/sds_trace_data.dat
+models/pynq_wrapper/layer_loader.so
