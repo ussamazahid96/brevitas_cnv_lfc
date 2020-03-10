@@ -34,7 +34,7 @@ sudo pip3 install *.whl
  ```bash
  git clone https://github.com/ussamazahid96/brevitas_cnv_lfc.git
  cd brevitas_cnv_lfc/training_scripts/models/pynq_wrapper/
- ./gen_layer_loader.sh
+ sudo sh gen_layer_loader.sh
  ```
 
 ## Evaluate on fpga
