@@ -1,6 +1,6 @@
 The following changes to applied for accurate pytorch -> hardware flow:
 
-##During Training:
+## During Training:
 
 1. During training quantize the input in Q1.7 format as the hardware is using during the inference. Check 
 [here](https://github.com/ussamazahid96/BNN-PYNQ/blob/fffddb17c3ce865487444aab2448d50d2cfd5f21/bnn/src/training/Pytorch/lenet_w8a8.py#L77)
@@ -21,7 +21,7 @@ You have to use this batch-norm layer at the end rather than the one having ten 
 
  4. When comparing the accuracy of the hardware you should always compare it with the CPU accuracy of the Pytorch model.
  
- ##During Export:
+ ## During Export:
  
  1. The invstd value of every batch-norm layer in Theano already has the eps (1e-4) included in it, But in Pytorch you have to include it 
  yourself while exporting Check [here](https://github.com/ussamazahid96/BNN-PYNQ/blob/fffddb17c3ce865487444aab2448d50d2cfd5f21/bnn/src/training/Pytorch/lenet_w8a8.py#L112).
@@ -29,7 +29,7 @@ You have to use this batch-norm layer at the end rather than the one having ten 
  2. In the [finnthesizer.py](https://github.com/Xilinx/BNN-PYNQ/blob/master/bnn/src/training/finnthesizer.py) replace all the 
  np.ceil operations with np.floor.
  
- ##During Inference:
+ ## During Inference:
  
  1. The most important difference in Theano and Pytorch is that if in the output predictions, more than one class has the same 
  highest score (which happens almost always that you end up with the same highest score for two classes). Now Theano assigns the 
